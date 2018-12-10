@@ -36,7 +36,7 @@
 + (NSString *) pbkdf2:(NSString *)password salt: (NSString *)salt cost: (NSInteger)cost length: (NSInteger)length {
     // Data of String to generate Hash key(hexa decimal string).
     NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *saltData = [salt dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *saltData = [self fromHex:salt];
 
     // Hash key (hexa decimal) string data length.
     NSMutableData *hashKeyData = [NSMutableData dataWithLength:length/8];
