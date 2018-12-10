@@ -170,7 +170,7 @@ public class RCTAes extends ReactContextBaseJavaModule {
     throws NoSuchAlgorithmException, InvalidKeySpecException
     {
         PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA256Digest());
-        gen.init(pwd.getBytes(StandardCharsets.UTF_8), salt.getBytes(StandardCharsets.UTF_8), cost);
+        gen.init(pwd.getBytes(StandardCharsets.UTF_8), Hex.decode(salt), cost);
         byte[] key = ((KeyParameter) gen.generateDerivedParameters(length)).getKey();
         return bytesToHex(key);
     }
