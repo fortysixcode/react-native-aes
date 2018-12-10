@@ -48,7 +48,7 @@
                     passwordData.length,
                     saltData.bytes,
                     saltData.length,
-                    kCCPRFHmacAlgSHA512,
+                    kCCPRFHmacAlgSHA256,
                     cost,
                     hashKeyData.mutableBytes,
                     hashKeyData.length);

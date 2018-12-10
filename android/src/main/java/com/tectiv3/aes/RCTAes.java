@@ -24,7 +24,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.Mac;
 
-import org.spongycastle.crypto.digests.SHA512Digest;
+import org.spongycastle.crypto.digests.SHA256Digest;
 import org.spongycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.spongycastle.crypto.params.KeyParameter;
 import org.spongycastle.util.encoders.Hex;
@@ -169,7 +169,7 @@ public class RCTAes extends ReactContextBaseJavaModule {
     private static String pbkdf2(String pwd, String salt, Integer cost, Integer length)
     throws NoSuchAlgorithmException, InvalidKeySpecException
     {
-        PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA512Digest());
+        PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA256Digest());
         gen.init(pwd.getBytes(StandardCharsets.UTF_8), salt.getBytes(StandardCharsets.UTF_8), cost);
         byte[] key = ((KeyParameter) gen.generateDerivedParameters(length)).getKey();
         return bytesToHex(key);
