@@ -61,31 +61,62 @@
     return [self toHex:hashKeyData];
 }
 
-+ (NSData *) AES128CBC: (NSString *)operation data: (NSData *)data key: (NSString *)key iv: (NSString *)iv {
-    //convert hex string to hex data
++ (NSData *)AES128CBC: (NSString* )operation data: (NSData *)data key: (NSString *)key iv: (NSString *)iv {
     NSData *keyData = [self fromHex:key];
     NSData *ivData = [self fromHex:iv];
-    //    NSData *keyData = [key dataUsingEncoding:NSUTF8StringEncoding];
-    size_t numBytes = 0;
-
-    NSMutableData * buffer = [[NSMutableData alloc] initWithLength:[data length] + kCCBlockSizeAES128];
-
-    CCCryptorStatus cryptStatus = CCCrypt(
-                                          [operation isEqualToString:@"encrypt"] ? kCCEncrypt : kCCDecrypt,
-                                          kCCAlgorithmAES128,
-                                          kCCOptionPKCS7Padding,
-                                          keyData.bytes, kCCKeySizeAES256,
-                                          ivData.bytes,
-                                          data.bytes, data.length,
-                                          buffer.mutableBytes,  buffer.length,
-                                          &numBytes);
-
-    if (cryptStatus == kCCSuccess) {
-        [buffer setLength:numBytes];
-        return buffer;
+    
+    size_t dataOutMoved = 0;
+    size_t dataOutMovedTotal = 0;
+    CCCryptorStatus ccStatus = 0;
+    CCCryptorRef cryptor = NULL;
+    
+    ccStatus = CCCryptorCreateWithMode([operation isEqualToString:@"encrypt"] ? kCCEncrypt : kCCDecrypt,
+                                       kCCModeCTR,
+                                       kCCAlgorithmAES,
+                                       ccNoPadding,
+                                       ivData.bytes, keyData.bytes,
+                                       kCCKeySizeAES256,
+                                       NULL, 0, 0, // tweak XTS mode, numRounds
+                                       kCCModeOptionCTR_BE, // CCModeOptions
+                                       &cryptor);
+    
+    if (cryptor == 0 || ccStatus != kCCSuccess) {
+        NSLog(@"CCCryptorCreate status: %d", ccStatus);
+        CCCryptorRelease(cryptor);
+        return nil;
     }
-    NSLog(@"AES error, %d", cryptStatus);
-    return nil;
+    
+    size_t dataOutLength = CCCryptorGetOutputLength(cryptor, data.length, true);
+    NSMutableData *dataOut = [NSMutableData dataWithLength:dataOutLength];
+    char *dataOutPointer = (char *)dataOut.mutableBytes;
+    
+    ccStatus = CCCryptorUpdate(cryptor,
+                               data.bytes, data.length,
+                               dataOutPointer, dataOutLength,
+                               &dataOutMoved);
+    dataOutMovedTotal += dataOutMoved;
+    
+    if (ccStatus != kCCSuccess) {
+        NSLog(@"CCCryptorUpdate status: %d", ccStatus);
+        CCCryptorRelease(cryptor);
+        return nil;
+    }
+    
+    ccStatus = CCCryptorFinal(cryptor,
+                              dataOutPointer + dataOutMoved, dataOutLength - dataOutMoved,
+                              &dataOutMoved);
+    if (ccStatus != kCCSuccess) {
+        NSLog(@"CCCryptorFinal status: %d", ccStatus);
+        CCCryptorRelease(cryptor);
+        return nil;
+    }
+    
+    CCCryptorRelease(cryptor);
+    
+    dataOutMovedTotal += dataOutMoved;
+    dataOut.length = dataOutMovedTotal;
+    
+    return dataOut;
 }
 
 + (NSString *) encrypt: (NSString *)clearText key: (NSString *)key iv: (NSString *)iv {
